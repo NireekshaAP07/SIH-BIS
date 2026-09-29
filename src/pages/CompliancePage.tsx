@@ -142,8 +142,9 @@ export default function CompliancePage() {
 
     const query = `What are the BIS compliance requirements, applicable Indian Standards, mandatory certifications, and testing requirements for: ${product}? Additional details — ${answerSummary}. Please explain in simple language suitable for a small business owner in India.`;
 
+    const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8001';
     try {
-      const res = await fetch('http://localhost:8001/api/chat', {
+      const res = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, top_k: 8 }),
