@@ -11,9 +11,7 @@ export default function Footer() {
           {/* BIS */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center flex-shrink-0">
-                <div className="text-bis-navy font-black text-xs">BIS</div>
-              </div>
+              <img src="/bis-logo.webp" alt="BIS Logo" className="w-8 h-8 object-contain flex-shrink-0" />
               <div>
                 <div className="font-bold text-sm">Bureau of Indian Standards</div>
               </div>
