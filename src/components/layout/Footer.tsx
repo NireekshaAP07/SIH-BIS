@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useLang } from '../../i18n/LanguageContext';
 
 export default function Footer() {
+  const { t } = useLang();
+
   return (
     <footer className="bg-bis-navy text-white mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -14,7 +17,7 @@ export default function Footer() {
               </div>
             </div>
             <ul className="space-y-2">
-              {['About BIS', 'Contact', 'Regional Offices', 'Career'].map(l => (
+              {[t.footer.aboutBIS, t.footer.contact, t.footer.regionalOffices, t.footer.career].map(l => (
                 <li key={l}><a href="#" className="text-white/60 hover:text-white text-sm transition-colors">{l}</a></li>
               ))}
             </ul>
@@ -22,14 +25,14 @@ export default function Footer() {
 
           {/* Services */}
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-white/90">Services</h4>
+            <h4 className="font-semibold text-sm mb-4 text-white/90">{t.footer.services}</h4>
             <ul className="space-y-2">
               {[
-                { label: 'Standards', to: '/standards' },
-                { label: 'Certification', to: '/certification' },
-                { label: 'Testing', to: '/testing' },
-                { label: 'Hallmarking', to: '/hallmarking' },
-                { label: 'Consumer Services', to: '/consumer' },
+                { label: t.nav.standards, to: '/standards' },
+                { label: t.nav.certification, to: '/certification' },
+                { label: t.nav.testing, to: '/testing' },
+                { label: t.nav.hallmarking, to: '/hallmarking' },
+                { label: t.nav.consumerServices, to: '/consumer' },
               ].map(l => (
                 <li key={l.to}><Link to={l.to} className="text-white/60 hover:text-white text-sm transition-colors">{l.label}</Link></li>
               ))}
@@ -38,13 +41,13 @@ export default function Footer() {
 
           {/* Resources */}
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-white/90">Resources</h4>
+            <h4 className="font-semibold text-sm mb-4 text-white/90">{t.footer.resources}</h4>
             <ul className="space-y-2">
               {[
-                { label: 'Documents & Publications', to: '/resources' },
-                { label: 'FAQs', to: '/resources' },
-                { label: 'Check My Requirements', to: '/compliance' },
-                { label: 'BIS Assistant', to: '/assistant' },
+                { label: t.footer.documentsPublications, to: '/resources' },
+                { label: t.footer.faqs, to: '/resources' },
+                { label: t.footer.checkRequirements, to: '/compliance' },
+                { label: t.footer.bisAssistant, to: '/assistant' },
               ].map(l => (
                 <li key={l.label}><Link to={l.to} className="text-white/60 hover:text-white text-sm transition-colors">{l.label}</Link></li>
               ))}
@@ -53,26 +56,24 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="font-semibold text-sm mb-4 text-white/90">Legal</h4>
+            <h4 className="font-semibold text-sm mb-4 text-white/90">{t.footer.legal}</h4>
             <ul className="space-y-2">
-              {['Privacy Policy', 'Terms of Use', 'Accessibility Statement', 'Disclaimer'].map(l => (
+              {[t.footer.privacyPolicy, t.footer.termsOfUse, t.footer.accessibilityStatement, t.footer.disclaimer].map(l => (
                 <li key={l}><a href="#" className="text-white/60 hover:text-white text-sm transition-colors">{l}</a></li>
               ))}
             </ul>
             <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-              <p className="text-xs text-white/50 leading-relaxed">
-                This portal provides AI-assisted access to BIS information. Responses are informational and should be verified against official BIS sources.
-              </p>
+              <p className="text-xs text-white/50 leading-relaxed">{t.footer.disclaimer2}</p>
             </div>
           </div>
         </div>
 
         <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/50 text-sm">© Bureau of Indian Standards. All rights reserved.</p>
+          <p className="text-white/50 text-sm">{t.footer.copyright}</p>
           <div className="flex items-center gap-4">
-            <span className="text-white/40 text-xs">Government of India</span>
+            <span className="text-white/40 text-xs">{t.footer.govIndia}</span>
             <span className="text-white/20">|</span>
-            <span className="text-white/40 text-xs">Ministry of Consumer Affairs, Food and Public Distribution</span>
+            <span className="text-white/40 text-xs">{t.footer.ministry}</span>
           </div>
         </div>
       </div>

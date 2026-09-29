@@ -1,16 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MOCK_NOTIFICATIONS } from '../../data/mockData';
-
-const NAV_ITEMS = [
-  { label: 'Home', path: '/' },
-  { label: 'Standards', path: '/standards' },
-  { label: 'Certification', path: '/certification' },
-  { label: 'Testing', path: '/testing' },
-  { label: 'Hallmarking', path: '/hallmarking' },
-  { label: 'Consumer Services', path: '/consumer' },
-  { label: 'Resources', path: '/resources' },
-];
+import { useLang } from '../../i18n/LanguageContext';
+import { LANGUAGES } from '../../i18n/translations';
 
 function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
   useEffect(() => {
@@ -25,6 +17,8 @@ function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => voi
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { lang, setLang, t } = useLang();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
@@ -55,6 +49,16 @@ export default function Header() {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  const NAV_ITEMS = [
+    { label: t.nav.home, path: '/' },
+    { label: t.nav.standards, path: '/standards' },
+    { label: t.nav.certification, path: '/certification' },
+    { label: t.nav.testing, path: '/testing' },
+    { label: t.nav.hallmarking, path: '/hallmarking' },
+    { label: t.nav.consumerServices, path: '/consumer' },
+    { label: t.nav.resources, path: '/resources' },
+  ];
+
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
@@ -76,11 +80,11 @@ export default function Header() {
               href="#main-content"
               className="sr-only focus:not-sr-only focus:absolute focus:top-1 focus:left-1 focus:px-2 focus:py-1 focus:bg-bis-gold focus:text-white focus:rounded focus:text-xs focus:z-50"
             >
-              Skip to main content
+              {t.nav.skipToMain}
             </a>
-            <span>Government of India</span>
+            <span>{t.footer.govIndia}</span>
             <span className="text-white/20">·</span>
-            <span className="hidden sm:inline">Ministry of Consumer Affairs, Food and Public Distribution</span>
+            <span className="hidden sm:inline">{t.footer.ministry}</span>
           </div>
 
           {/* Right utilities */}
@@ -90,15 +94,15 @@ export default function Header() {
               <button
                 onClick={() => { setAccessOpen(p => !p); setLangOpen(false); setNotifOpen(false); }}
                 className="flex items-center gap-1 px-2.5 h-8 text-white/70 hover:text-white transition-colors"
-                aria-label="Accessibility options"
+                aria-label={t.nav.accessibility}
                 aria-expanded={accessOpen}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="4" r="1"/><path strokeLinecap="round" strokeLinejoin="round" d="M10 9h4m-2 0v11M7.5 15l2.5-3 2.5 3"/></svg>
-                <span className="hidden sm:inline">Accessibility</span>
+                <span className="hidden sm:inline">{t.nav.accessibility}</span>
               </button>
               {accessOpen && (
                 <div className="absolute right-0 top-full mt-0.5 bg-white border border-bis-border rounded-xl shadow-xl w-52 z-50 p-4">
-                  <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-3">Text Size</p>
+                  <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-3">{t.nav.textSize}</p>
                   <div className="grid grid-cols-3 gap-1.5 mb-4">
                     {([1, 1.12, 1.25] as const).map((s, i) => (
                       <button
@@ -113,7 +117,7 @@ export default function Header() {
                   </div>
                   <div className="border-t border-bis-border pt-3">
                     <Link to="/settings" className="flex items-center justify-between text-xs text-bis-blue hover:text-bis-navy py-0.5 transition-colors">
-                      All accessibility settings
+                      {t.nav.allAccessibility}
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                     </Link>
                   </div>
@@ -128,28 +132,29 @@ export default function Header() {
               <button
                 onClick={() => { setLangOpen(p => !p); setAccessOpen(false); setNotifOpen(false); }}
                 className="flex items-center gap-1 px-2.5 h-8 text-white/70 hover:text-white transition-colors"
-                aria-label="Language selector"
+                aria-label={t.nav.language}
                 aria-expanded={langOpen}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
-                English
+                {LANGUAGES.find(l => l.code === lang)?.native ?? 'English'}
                 <svg className="w-2.5 h-2.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
               </button>
               {langOpen && (
                 <div className="absolute right-0 top-full mt-0.5 bg-white border border-bis-border rounded-xl shadow-xl w-48 z-50 overflow-hidden">
-                  {[
-                    { code: 'en', label: 'English', note: '' },
-                    { code: 'hi', label: 'हिंदी', note: 'Coming soon' },
-                    { code: 'kn', label: 'ಕನ್ನಡ', note: 'Coming soon' },
-                    { code: 'ta', label: 'தமிழ்', note: 'Coming soon' },
-                    { code: 'more', label: 'More languages', note: 'Planned' },
-                  ].map(l => (
+                  {LANGUAGES.map(l => (
                     <button
                       key={l.code}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${l.code === 'en' ? 'bg-bis-blue-light text-bis-blue font-semibold' : 'text-bis-text hover:bg-bis-surface'}`}
+                      onClick={() => { setLang(l.code); setLangOpen(false); }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                        lang === l.code
+                          ? 'bg-bis-blue-light text-bis-blue font-semibold'
+                          : 'text-bis-text hover:bg-bis-surface'
+                      }`}
                     >
-                      {l.label}
-                      {l.note && <span className="text-[10px] text-bis-muted">{l.note}</span>}
+                      <span>{l.native}</span>
+                      {lang === l.code && (
+                        <svg className="w-3.5 h-3.5 text-bis-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -162,9 +167,9 @@ export default function Header() {
               <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
             <div className="w-px h-4 bg-white/15 mx-0.5"/>
-            <a href="/resources" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors">Help</a>
+            <Link to="/help" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors">{t.nav.help}</Link>
             <div className="w-px h-4 bg-white/15 mx-0.5"/>
-            <a href="/consumer" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors hidden sm:flex">Contact</a>
+            <Link to="/contact" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors hidden sm:flex">{t.nav.contact}</Link>
           </div>
         </div>
       </div>
@@ -189,7 +194,7 @@ export default function Header() {
             <button
               onClick={() => navigate('/search')}
               className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Search"
+              aria-label={t.nav.search}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
@@ -199,7 +204,7 @@ export default function Header() {
               <button
                 onClick={() => { setNotifOpen(p => !p); setLangOpen(false); setAccessOpen(false); }}
                 className="relative p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label={`Notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
+                aria-label={`${t.nav.notifications}${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
                 aria-expanded={notifOpen}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
@@ -210,10 +215,10 @@ export default function Header() {
               {notifOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-white border border-bis-border rounded-xl shadow-2xl w-80 z-50">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-bis-border">
-                    <h3 className="text-sm font-semibold text-bis-text">Notifications</h3>
+                    <h3 className="text-sm font-semibold text-bis-text">{t.nav.notifications}</h3>
                     {unreadCount > 0 && (
                       <button onClick={markAllRead} className="text-xs text-bis-blue hover:text-bis-navy transition-colors">
-                        Mark all read
+                        {t.nav.markAllRead}
                       </button>
                     )}
                   </div>
@@ -233,12 +238,12 @@ export default function Header() {
                         </div>
                       </div>
                     )) : (
-                      <div className="px-4 py-8 text-center text-sm text-bis-muted">No notifications</div>
+                      <div className="px-4 py-8 text-center text-sm text-bis-muted">{t.nav.noNotifications}</div>
                     )}
                   </div>
                   <div className="px-4 py-2.5 border-t border-bis-border">
                     <button className="text-xs text-bis-blue hover:text-bis-navy transition-colors w-full text-center">
-                      View all notifications
+                      {t.nav.viewAll}
                     </button>
                   </div>
                 </div>
@@ -254,7 +259,7 @@ export default function Header() {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-bis-gold text-white hover:bg-bis-gold-bright shadow-sm transition-all"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
-              Ask BIS Assistant
+              {t.nav.askAssistant}
             </Link>
           </div>
 
@@ -263,7 +268,7 @@ export default function Header() {
             <button
               onClick={() => navigate('/search')}
               className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Search"
+              aria-label={t.nav.search}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
@@ -327,14 +332,14 @@ export default function Header() {
               className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-bis-gold rounded-lg hover:bg-bis-gold-light transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
-              Ask BIS Assistant
+              {t.nav.askAssistant}
             </Link>
             <Link
               to="/compliance"
               className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-bis-muted rounded-lg hover:bg-bis-surface transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              Check My BIS Requirements
+              {t.nav.checkRequirements}
             </Link>
           </nav>
         </div>

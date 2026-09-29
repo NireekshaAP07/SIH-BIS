@@ -87,38 +87,74 @@ export default function SearchPage() {
             <div className="flex-1 space-y-4">
               <p className="text-sm text-bis-muted">Results for "<strong className="text-bis-text">{query}</strong>"</p>
 
-              {(tab === 'all' || tab === 'standards') && MOCK_STANDARDS.map((std, i) => (
-                <Card key={i} hoverable onClick={() => navigate('/standards/detail')} className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <Badge label="Standard" variant="blue" />
-                        <span className="text-xs font-mono font-semibold text-bis-blue">{std.number}</span>
-                        <Badge label={std.status} variant="green" />
-                      </div>
-                      <h3 className="font-medium text-bis-text mb-1">{std.title}</h3>
-                      <p className="text-xs text-bis-muted line-clamp-2">{std.scope}</p>
-                    </div>
-                    <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); navigate('/standards/detail'); }}>View</Button>
-                  </div>
-                </Card>
-              ))}
+              {(tab === 'all' || tab === 'standards') && (() => {
+                const results = MOCK_STANDARDS.filter(s =>
+                  !query.trim() ||
+                  s.number.toLowerCase().includes(query.toLowerCase()) ||
+                  s.title.toLowerCase().includes(query.toLowerCase()) ||
+                  s.scope.toLowerCase().includes(query.toLowerCase()) ||
+                  s.tags.some(t => t.toLowerCase().includes(query.toLowerCase()))
+                );
 
-              {(tab === 'all' || tab === 'certification') && MOCK_CERTIFICATIONS.slice(0, 2).map((cert, i) => (
-                <Card key={i} hoverable onClick={() => navigate('/certification')} className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge label="Certification" variant="gold" />
-                        <Badge label={cert.scheme} variant="navy" />
-                      </div>
-                      <h3 className="font-medium text-bis-text mb-1">{cert.title}</h3>
-                      <p className="text-xs text-bis-muted line-clamp-2">{cert.description}</p>
+                if (results.length === 0) {
+                  return tab === 'standards' ? (
+                    <div className="bg-white border border-bis-border rounded-lg p-8 text-center text-bis-muted">
+                      No standards found matching "{query}".
                     </div>
-                    <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); navigate('/certification'); }}>View</Button>
-                  </div>
-                </Card>
-              ))}
+                  ) : null;
+                }
+
+                return results.map((std, i) => (
+                  <Card key={i} hoverable onClick={() => navigate(`/standards/detail?id=${std.id}`, { state: { standard: std } })} className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <Badge label="Standard" variant="blue" />
+                          <span className="text-xs font-mono font-semibold text-bis-blue">{std.number}</span>
+                          <Badge label={std.status} variant="green" />
+                          {std.mandatory && <Badge label="Mandatory (QCO)" variant="red" />}
+                        </div>
+                        <h3 className="font-medium text-bis-text mb-1">{std.title}</h3>
+                        <p className="text-xs text-bis-muted line-clamp-2">{std.scope}</p>
+                      </div>
+                      <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); navigate(`/standards/detail?id=${std.id}`, { state: { standard: std } }); }}>View</Button>
+                    </div>
+                  </Card>
+                ));
+              })()}
+
+              {(tab === 'all' || tab === 'certification') && (() => {
+                const results = MOCK_CERTIFICATIONS.filter(c =>
+                  !query.trim() ||
+                  c.title.toLowerCase().includes(query.toLowerCase()) ||
+                  c.scheme.toLowerCase().includes(query.toLowerCase()) ||
+                  c.description.toLowerCase().includes(query.toLowerCase())
+                );
+
+                if (results.length === 0) {
+                  return tab === 'certification' ? (
+                    <div className="bg-white border border-bis-border rounded-lg p-8 text-center text-bis-muted">
+                      No certification schemes found matching "{query}".
+                    </div>
+                  ) : null;
+                }
+
+                return results.map((cert, i) => (
+                  <Card key={i} hoverable onClick={() => navigate('/certification')} className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge label="Certification" variant="gold" />
+                          <Badge label={cert.scheme} variant="navy" />
+                        </div>
+                        <h3 className="font-medium text-bis-text mb-1">{cert.title}</h3>
+                        <p className="text-xs text-bis-muted line-clamp-2">{cert.description}</p>
+                      </div>
+                      <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); navigate('/certification'); }}>View</Button>
+                    </div>
+                  </Card>
+                ));
+              })()}
             </div>
           </div>
         )}

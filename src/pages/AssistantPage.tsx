@@ -2,6 +2,25 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Badge, Card, TrustBadge, Drawer, Modal, Toast } from '../components/ui';
 import { RECENT_QUERIES, DEMO_RESPONSE, MOCK_STANDARDS } from '../data/mockData';
+import { useLang } from '../i18n/LanguageContext';
+import { LANGUAGES } from '../i18n/translations';
+
+// ── Backend API config ────────────────────────────────────────────────────────
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8001';
+
+type Source = {
+  title: string;
+  section: string;
+  clause: string;
+  page: string;
+  type: string;
+  relevance_score?: number;
+};
+
+type StandardRef = {
+  number: string;
+  title: string;
+};
 
 type Message = {
   id: string;
@@ -9,22 +28,123 @@ type Message = {
   content: string;
   state?: 'loading' | 'success' | 'partial' | 'error' | 'clarify';
   standards?: typeof MOCK_STANDARDS;
-  sources?: typeof DEMO_RESPONSE.sources;
+  sources?: Source[];
   certNote?: string;
   testingNote?: string;
+  fromBackend?: boolean;
 };
 
-const LOADING_STEPS = [
-  'Searching BIS sources...',
-  'Analysing relevant standards...',
-  'Preparing your answer...',
-];
+const LOADING_STEPS_BY_LANG: Record<string, string[]> = {
+  hi: [
+    'BIS स्रोतों में खोज की जा रही है...',
+    'प्रासंगिक मानकों का विश्लेषण किया जा रहा है...',
+    'सरल उत्तर तैयार किया जा रहा है...',
+  ],
+  kn: [
+    'BIS ಮೂಲಗಳನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ...',
+    'ಸಂಬಂಧಿತ ಮಾನದಂಡಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...',
+    'ಸರಳ ಉತ್ತರವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...',
+  ],
+  ta: [
+    'BIS ஆதாரங்கள் தேடப்படுகின்றன...',
+    'தொடர்புடைய தரநிலைகள் பகுப்பாய்வு செய்யப்படுகின்றன...',
+    'எளிய பதில் தயாரிக்கப்படுகிறது...',
+  ],
+  en: [
+    'Searching BIS sources...',
+    'Analysing relevant standards...',
+    'Preparing your answer...',
+  ],
+};
+
+const PLACEHOLDERS: Record<string, string> = {
+  hi: 'भारतीय मानक, प्रमाणीकरण, परीक्षण या हॉलमार्किंग के बारे में पूछें...',
+  kn: 'ಭಾರತೀಯ ಮಾನದಂಡಗಳು, ಪ್ರಮಾಣೀಕರಣ, ಪರೀಕ್ಷೆ ಅಥವಾ ಹಾಲ್‌ಮಾರ್ಕಿಂಗ್ ಬಗ್ಗೆ ಕೇಳಿ...',
+  ta: 'இந்திய தரநிலைகள், சான்றிதழ், சோதனை அல்லது ஹால்மார்க்கிங் பற்றி கேளுங்கள்...',
+  en: 'Ask about Indian Standards, certification, testing, hallmarking or BIS services...',
+};
 
 const CLARIFY_OPTIONS = ['Product', 'Certification', 'Testing', 'Hallmarking', 'Consumer query'];
+
+function getSourceLinkDetails(source: { title?: string; section?: string; type?: string; bis_url?: string; url?: string } | null) {
+  if (!source) {
+    return {
+      externalUrl: 'https://www.bis.gov.in',
+      externalLabel: 'Open Official BIS Portal (bis.gov.in)',
+      internalPath: null,
+    };
+  }
+
+  if (source.bis_url || source.url) {
+    return {
+      externalUrl: source.bis_url || source.url || 'https://www.bis.gov.in',
+      externalLabel: 'Open Official Source on bis.gov.in',
+      internalPath: null,
+    };
+  }
+
+  const combined = `${source.title || ''} ${source.section || ''}`.toUpperCase();
+
+  // Check for Indian Standard like IS 1786, IS 2062, IS 10500, etc.
+  const isMatch = combined.match(/IS\s*(\d+)(?:\s*\(PART\s*\d+\))?(?::\d{4})?/i);
+  if (isMatch) {
+    const isNum = isMatch[1];
+    const standardId = `is-${isNum}`;
+    const standardNum = isMatch[0];
+    return {
+      externalUrl: 'https://www.services.bis.gov.in/php/BIS_2.0/bisconnect/knowyourstandards/indian_standards/isdetails',
+      externalLabel: `Open ${standardNum} on Official BIS Portal`,
+      internalPath: `/standards/detail?id=${standardId}`,
+    };
+  }
+
+  // Quality Control Orders
+  if (combined.includes('QUALITY CONTROL') || combined.includes('QCO')) {
+    return {
+      externalUrl: 'https://www.bis.gov.in/product-certification/products-under-compulsory-certification/',
+      externalLabel: 'Open Mandatory QCO List on bis.gov.in',
+      internalPath: '/compliance',
+    };
+  }
+
+  // Hallmarking
+  if (combined.includes('HALLMARK') || combined.includes('HUID')) {
+    return {
+      externalUrl: 'https://www.bis.gov.in/hallmarking-overview/',
+      externalLabel: 'Open Hallmarking Scheme on bis.gov.in',
+      internalPath: '/hallmarking',
+    };
+  }
+
+  // Testing
+  if (combined.includes('TEST') || combined.includes('LABORATOR')) {
+    return {
+      externalUrl: 'https://www.bis.gov.in/laboratory-services/laboratory-network/',
+      externalLabel: 'Open Testing Laboratories on bis.gov.in',
+      internalPath: '/testing',
+    };
+  }
+
+  // Certification schemes
+  if (combined.includes('CERTIFICATION') || combined.includes('SCHEME')) {
+    return {
+      externalUrl: 'https://www.bis.gov.in/product-certification/conformity-assessment-schemes/',
+      externalLabel: 'Open Certification Schemes on bis.gov.in',
+      internalPath: '/certification',
+    };
+  }
+
+  return {
+    externalUrl: 'https://www.bis.gov.in',
+    externalLabel: 'Open Official BIS Portal (bis.gov.in)',
+    internalPath: null,
+  };
+}
 
 export default function AssistantPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { lang, setLang, t } = useLang();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -41,7 +161,7 @@ export default function AssistantPage() {
     const state = location.state as { initialQuery?: string } | null;
     if (state?.initialQuery) {
       setTimeout(() => sendMessage(state.initialQuery!), 100);
-      window.history.replaceState({}, '');
+      navigate(location.pathname, { replace: true, state: {} });
     }
   }, []);
 
@@ -54,7 +174,7 @@ export default function AssistantPage() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  function sendMessage(text?: string) {
+  async function sendMessage(text?: string) {
     const q = (text ?? input).trim();
     if (!q) return;
     setInput('');
@@ -65,33 +185,102 @@ export default function AssistantPage() {
 
     setMessages(prev => [...prev, userMsg, loadingMsg]);
 
+    // Animate loading steps
+    const activeSteps = LOADING_STEPS_BY_LANG[lang] || LOADING_STEPS_BY_LANG.en;
     let step = 0;
     setLoadingStep(0);
     const interval = setInterval(() => {
       step++;
-      if (step < LOADING_STEPS.length) setLoadingStep(step);
+      if (step < activeSteps.length) setLoadingStep(step);
     }, 1000);
 
-    const isAmbiguous = q.toLowerCase() === 'what standard do i need?' ||
+    // Handle clarify intent (ambiguous queries)
+    const isAmbiguous =
+      q.toLowerCase() === 'what standard do i need?' ||
       (q.toLowerCase().includes('what standard') && q.length < 35 && !q.toLowerCase().includes('product'));
-    const isError = q.toLowerCase().includes('error test');
 
-    setTimeout(() => {
+    if (isAmbiguous) {
       clearInterval(interval);
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => m.id === loadingId ? {
+          ...m,
+          content: "I'd be happy to help. Which product or service are you asking about?",
+          state: 'clarify',
+        } : m));
+      }, 800);
+      return;
+    }
+
+    // ── Call the real RAG backend ────────────────────────────────────────────
+    try {
+      const response = await fetch(`${API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, top_k: 5, language: lang }),
+        signal: AbortSignal.timeout(45000),  // 45s timeout for LLM
+      });
+
+      clearInterval(interval);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(err.detail || `Server error ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Map backend standard refs to MOCK_STANDARDS shape (for UI display)
+      const backendStandards = data.standards?.map((s: StandardRef) => ({
+        id: s.number.toLowerCase().replace(/\s/g, '-'),
+        number: s.number,
+        title: s.title,
+        status: 'Current',
+        year: '',
+        scope: '',
+        relevance: 'High',
+        certRequired: false,
+        testingRequired: true,
+        tags: [],
+        division: '',
+        mandatory: false,
+      })) ?? [];
+
       setMessages(prev => prev.map(m => m.id === loadingId ? {
         ...m,
-        content: isAmbiguous
-          ? "I'd be happy to help. Which product or service are you asking about?"
-          : isError
-          ? "We couldn't find sufficient authoritative information to answer this confidently."
-          : DEMO_RESPONSE.answer,
-        state: isAmbiguous ? 'clarify' : isError ? 'error' : 'success',
-        standards: (!isAmbiguous && !isError) ? DEMO_RESPONSE.standards : undefined,
-        sources: (!isAmbiguous && !isError) ? DEMO_RESPONSE.sources : undefined,
-        certNote: (!isAmbiguous && !isError) ? DEMO_RESPONSE.certNote : undefined,
-        testingNote: (!isAmbiguous && !isError) ? DEMO_RESPONSE.testingNote : undefined,
+        content: data.answer,
+        state: 'success',
+        standards: backendStandards.length > 0 ? backendStandards : undefined,
+        sources: data.sources?.length > 0 ? data.sources : undefined,
+        fromBackend: data.ready,
       } : m));
-    }, 3200);
+
+    } catch (err: any) {
+      clearInterval(interval);
+
+      // Fallback to demo data if backend is unreachable
+      const isNetworkError = err.name === 'TypeError' || err.name === 'AbortError' || err.message?.includes('fetch');
+
+      if (isNetworkError) {
+        // Backend not running — gracefully degrade to demo response
+        setMessages(prev => prev.map(m => m.id === loadingId ? {
+          ...m,
+          content: DEMO_RESPONSE.answer + '\n\n*(Note: Using demo data — start the backend for real RAG-powered answers)*',
+          state: 'success',
+          standards: DEMO_RESPONSE.standards as any,
+          sources: DEMO_RESPONSE.sources,
+          certNote: DEMO_RESPONSE.certNote,
+          testingNote: DEMO_RESPONSE.testingNote,
+          fromBackend: false,
+        } : m));
+      } else {
+        // Real backend error
+        setMessages(prev => prev.map(m => m.id === loadingId ? {
+          ...m,
+          content: `Error: ${err.message ?? 'Failed to get a response. Please try again.'}`,
+          state: 'error',
+        } : m));
+      }
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -183,27 +372,47 @@ export default function AssistantPage() {
       {/* ── Main chat ───────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Chat header */}
-        <div className="bg-white border-b border-bis-border px-4 py-3 flex items-center gap-3 flex-shrink-0">
-          <button
-            className="md:hidden p-1.5 rounded-lg text-bis-muted hover:text-bis-text hover:bg-bis-surface transition-colors"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open sidebar"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
-          </button>
-          <div className="w-7 h-7 bg-bis-navy rounded-md flex items-center justify-center text-white flex-shrink-0">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        <div className="bg-white border-b border-bis-border px-4 py-2.5 flex items-center justify-between gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              className="md:hidden p-1.5 rounded-lg text-bis-muted hover:text-bis-text hover:bg-bis-surface transition-colors"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            </button>
+            <div className="w-7 h-7 bg-bis-navy rounded-md flex items-center justify-center text-white flex-shrink-0">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-semibold text-bis-text text-sm leading-tight truncate">{t.nav.askAssistant}</h1>
+              <p className="text-[11px] text-bis-muted leading-tight truncate">Source-backed information on Indian Standards</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-semibold text-bis-text text-sm leading-tight">BIS Assistant</h1>
-            <p className="text-[11px] text-bis-muted leading-tight">Source-backed information on Indian Standards and BIS services</p>
+
+          {/* Quick language toggle */}
+          <div className="flex items-center gap-1 bg-bis-surface p-1 rounded-lg border border-bis-border flex-shrink-0">
+            {LANGUAGES.map(l => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className={`px-2 py-0.5 text-xs rounded-md font-medium transition-all ${
+                  lang === l.code
+                    ? 'bg-bis-navy text-white shadow-xs'
+                    : 'text-bis-muted hover:text-bis-text hover:bg-white'
+                }`}
+                title={l.label}
+              >
+                {l.native}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {messages.length === 0 ? (
-            <EmptyState onQuery={sendMessage} />
+            <EmptyState onQuery={sendMessage} lang={lang} />
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
               {messages.map(msg => (
@@ -231,7 +440,7 @@ export default function AssistantPage() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about Indian Standards, certification, testing, hallmarking or BIS services..."
+                placeholder={PLACEHOLDERS[lang] || PLACEHOLDERS.en}
                 className="flex-1 resize-none text-sm text-bis-text placeholder:text-bis-muted/60 outline-none bg-transparent min-h-[40px] max-h-32 py-1.5 px-2 leading-relaxed"
                 rows={1}
                 aria-label="Message input"
@@ -263,45 +472,86 @@ export default function AssistantPage() {
 
       {/* Source Drawer */}
       <Drawer open={drawerOpen} title="Source Document" onClose={() => setDrawerOpen(false)}>
-        {selectedSource && (
-          <div className="space-y-6">
-            <div>
-              <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-1.5">Document</p>
-              <p className="font-semibold text-bis-text">{selectedSource.title}</p>
-              <p className="text-xs text-bis-muted mb-2">{selectedSource.type}</p>
-              <TrustBadge type="official" />
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-2">Relevant Section</p>
-              <div className="bg-bis-blue-pale border border-bis-blue/20 rounded-xl p-4">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-bis-blue"/>
-                  <span className="text-xs font-medium text-bis-blue">{selectedSource.section}</span>
+        {selectedSource && (() => {
+          const linkDetails = getSourceLinkDetails(selectedSource);
+          return (
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-1.5">Document</p>
+                <p className="font-semibold text-bis-text">{selectedSource.title}</p>
+                <p className="text-xs text-bis-muted mb-2">{selectedSource.type}</p>
+                <TrustBadge type="official" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-2">Relevant Section</p>
+                <div className="bg-bis-blue-pale border border-bis-blue/20 rounded-xl p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-bis-blue"/>
+                    <span className="text-xs font-semibold text-bis-blue">{selectedSource.section}</span>
+                  </div>
+                  <p className="text-sm text-bis-text leading-relaxed">
+                    {selectedSource.title?.includes('IS 1786')
+                      ? 'Specifies requirements for high strength deformed steel bars and wires for concrete reinforcement (TMT bars), including Fe 415, Fe 500, Fe 500D, Fe 550, and Fe 600 grades.'
+                      : selectedSource.title?.includes('IS 2062')
+                      ? 'Specifies requirements for hot-rolled medium and high tensile structural steel for buildings, bridges, and infrastructure.'
+                      : selectedSource.title?.includes('QUALITY CONTROL')
+                      ? 'Government notification mandating compulsory BIS certification (ISI Mark) under Section 16 of the BIS Act, 2016.'
+                      : selectedSource.title?.includes('TESTING')
+                      ? 'Standard testing protocol for product conformity assessment conducted by BIS Central Laboratory and recognised NABL testing laboratories.'
+                      : `Official Bureau of Indian Standards document citation for ${selectedSource.title}.`}
+                  </p>
                 </div>
-                <p className="text-sm text-bis-text leading-relaxed italic text-bis-muted">
-                  "The relevant information from this section of the official BIS document would appear here. The applicable clause or paragraph would be highlighted to assist the user in locating the exact reference within the source document."
-                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-2">Reference</p>
+                <div className="bg-bis-surface rounded-lg p-3 space-y-1.5 text-sm">
+                  <div className="flex gap-3"><span className="text-bis-muted w-16">Section</span><span className="font-medium text-bis-text">{selectedSource.section}</span></div>
+                  <div className="flex gap-3"><span className="text-bis-muted w-16">Clause</span><span className="font-medium text-bis-text">{selectedSource.clause || '—'}</span></div>
+                  <div className="flex gap-3"><span className="text-bis-muted w-16">Page</span><span className="font-medium text-bis-text">{selectedSource.page || '—'}</span></div>
+                </div>
+              </div>
+
+              {/* Working Navigation and External Links */}
+              <div className="flex flex-col gap-2.5 pt-4 border-t border-bis-border">
+                <a
+                  href={linkDetails.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-bis-navy hover:bg-bis-navy-dark !text-white text-white text-sm font-semibold rounded-lg transition-colors shadow-sm cursor-pointer"
+                  style={{ color: '#ffffff', backgroundColor: '#0d2858' }}
+                >
+                  <span className="!text-white text-white font-semibold" style={{ color: '#ffffff' }}>{linkDetails.externalLabel}</span>
+                  <svg className="w-4 h-4 flex-shrink-0 !text-white text-white" style={{ color: '#ffffff' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+
+                {linkDetails.internalPath && (
+                  <button
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      navigate(linkDetails.internalPath!);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-bis-blue/40 hover:border-bis-blue bg-bis-blue-light/50 text-bis-navy text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 text-bis-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>View Full Standard Profile in App</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="w-full flex items-center justify-center px-4 py-2 border border-bis-border hover:bg-bis-surface text-bis-muted hover:text-bis-text text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold text-bis-muted uppercase tracking-wider mb-2">Reference</p>
-              <div className="bg-bis-surface rounded-lg p-3 space-y-1.5 text-sm">
-                <div className="flex gap-3"><span className="text-bis-muted w-16">Section</span><span className="font-medium text-bis-text">{selectedSource.section}</span></div>
-                <div className="flex gap-3"><span className="text-bis-muted w-16">Clause</span><span className="font-medium text-bis-text">{selectedSource.clause || '—'}</span></div>
-                <div className="flex gap-3"><span className="text-bis-muted w-16">Page</span><span className="font-medium text-bis-text">{selectedSource.page || '—'}</span></div>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 pt-4 border-t border-bis-border">
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-bis-navy hover:bg-bis-navy-dark text-white text-sm font-medium rounded-lg transition-colors">
-                Open Official Source
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-              </button>
-              <button onClick={() => setDrawerOpen(false)} className="w-full flex items-center justify-center px-4 py-2.5 border border-bis-border hover:border-bis-blue text-bis-text text-sm font-medium rounded-lg transition-colors">
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </Drawer>
 
       {/* New Query Modal */}
@@ -325,29 +575,73 @@ export default function AssistantPage() {
   );
 }
 
+const SUGGESTIONS_BY_LANG: Record<string, { heading: string; sub: string; items: string[] }> = {
+  hi: {
+    heading: 'मैं आपकी क्या मदद कर सकता हूँ?',
+    sub: 'भारतीय मानकों, BIS प्रमाणीकरण, परीक्षण आवश्यकताओं, हॉलमार्किंग या किसी भी सरकारी नियम के बारे में पूछें। उत्तर आधिकारिक BIS स्रोतों पर आधारित हैं।',
+    items: [
+      'स्टेनलेस स्टील पानी की बोतल के लिए कौन सा मानक लागू होता है?',
+      'BIS प्रमाणीकरण के लिए आवेदन कैसे करें?',
+      'LED लाइट के लिए परीक्षण आवश्यकताएं क्या हैं?',
+      'भारत में सोने की हॉलमार्किंग कैसे काम करती है?',
+      'किन उत्पादों के लिए BIS प्रमाणीकरण अनिवार्य है?',
+      'ISI मार्क क्या है और असली की पहचान कैसे करें?',
+    ]
+  },
+  kn: {
+    heading: 'ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?',
+    sub: 'ಭಾರತೀಯ ಮಾನದಂಡಗಳು, BIS ಪ್ರಮಾಣೀಕರಣ, ಪರೀಕ್ಷಾ ಅವಶ್ಯಕತೆಗಳು, ಹಾಲ್‌ಮಾರ್ಕಿಂಗ್ ಅಥವಾ ಯಾವುದೇ BIS ಪ್ರಶ್ನೆಯನ್ನು ಕೇಳಿ. ಅಧಿಕೃತ ಮೂಲಗಳಿಂದ ಉತ್ತರಗಳು ಲಭ್ಯ.',
+    items: [
+      'ಸ್ಟೇನ್‌ಲೆಸ್ ಸ್ಟೀಲ್ ನೀರಿನ ಬಾಟಲಿಗೆ ಯಾವ ಮಾನದಂಡ ಅನ್ವಯಿಸುತ್ತದೆ?',
+      'BIS ಪ್ರಮಾಣೀಕರಣಕ್ಕೆ ಹೇಗೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಬೇಕು?',
+      'LED ದೀಪಗಳಿಗೆ ಪರೀಕ್ಷಾ ಅವಶ್ಯಕತೆಗಳು ಯಾವುವು?',
+      'ಭಾರತದಲ್ಲಿ ಚಿನ್ನದ ಹಾಲ್‌ಮಾರ್ಕಿಂಗ್ ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ?',
+      'ಯಾವ ಉತ್ಪನ್ನಗಳಿಗೆ BIS ಪ್ರಮಾಣೀಕರಣ ಕಡ್ಡಾಯವಾಗಿದೆ?',
+      'ISI ಮುದ್ರೆ ಎಂದರೇನು ಮತ್ತು ಅದನ್ನು ಹೇಗೆ ಗುರುತಿಸುವುದು?',
+    ]
+  },
+  ta: {
+    heading: 'நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?',
+    sub: 'இந்திய தரநிலைகள், BIS சான்றிதழ், சோதனை தேவைகள், ஹால்மார்க்கிங் அல்லது ஏதேனும் BIS தொடர்பான கேள்விகளைக் கேளுங்கள். பதில்கள் அதிகாரப்பூர்வ BIS ஆதாரங்களை அடிப்படையாகக் கொண்டவை.',
+    items: [
+      'துருப்பிடிக்காத எஃகு தண்ணீர் பாட்டிலுக்கு எந்த தரநிலை பொருந்தும்?',
+      'BIS சான்றிதழுக்கு எவ்வாறு விண்ணப்பிப்பது?',
+      'LED விளக்குகளுக்கான சோதனை தேவைகள் யாவை?',
+      'இந்தியாவில் தங்க ஹால்மார்க்கிங் எவ்வாறு செயல்படுகிறது?',
+      'எந்த தயாரிப்புகளுக்கு BIS சான்றிதழ் கட்டாயமாகும்?',
+      'ISI முத்திரை என்றால் என்ன மற்றும் அதை எவ்வாறு அடையாளம் காண்பது?',
+    ]
+  },
+  en: {
+    heading: 'How can I help you?',
+    sub: 'Ask about Indian Standards, BIS certification, testing requirements, hallmarking, or any BIS-related query. Responses are grounded in official BIS sources.',
+    items: [
+      'Which standard applies to stainless steel water bottles?',
+      'How do I apply for BIS certification?',
+      'What are the testing requirements for LED lights?',
+      'How does gold hallmarking work in India?',
+      'Which products need mandatory BIS certification?',
+      'What is the ISI Mark?',
+    ]
+  }
+};
+
 /* ── Empty state ──────────────────────────────────────────── */
-function EmptyState({ onQuery }: { onQuery: (q: string) => void }) {
-  const suggestions = [
-    'Which standard applies to stainless steel water bottles?',
-    'How do I apply for BIS certification?',
-    'What are the testing requirements for LED lights?',
-    'How does gold hallmarking work in India?',
-    'Which products need mandatory BIS certification?',
-    'What is the ISI Mark?',
-  ];
+function EmptyState({ onQuery, lang }: { onQuery: (q: string) => void; lang: string }) {
+  const content = SUGGESTIONS_BY_LANG[lang] || SUGGESTIONS_BY_LANG.en;
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center py-10 mb-6">
         <div className="w-12 h-12 bg-bis-navy rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm">
           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
         </div>
-        <h2 className="text-xl font-bold text-bis-text mb-2">How can I help you?</h2>
+        <h2 className="text-xl font-bold text-bis-text mb-2">{content.heading}</h2>
         <p className="text-bis-muted text-sm max-w-md mx-auto leading-relaxed">
-          Ask about Indian Standards, BIS certification, testing requirements, hallmarking, or any BIS-related query. Responses are grounded in official BIS sources.
+          {content.sub}
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {suggestions.map(s => (
+        {content.items.map(s => (
           <button
             key={s}
             onClick={() => onQuery(s)}
@@ -364,6 +658,249 @@ function EmptyState({ onQuery }: { onQuery: (q: string) => void }) {
   );
 }
 
+/* ── Markdown parser and FormattedMessage for simple Indian-citizen answers ── */
+function parseInlineMarkdown(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**') && token.endsWith('**')) {
+      parts.push(
+        <strong key={match.index} className="font-semibold text-bis-navy-dark">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith('*') && token.endsWith('*')) {
+      parts.push(
+        <em key={match.index} className="italic text-bis-text">
+          {token.slice(1, -1)}
+        </em>
+      );
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      parts.push(
+        <code key={match.index} className="px-1.5 py-0.5 bg-bis-surface border border-bis-border rounded font-mono text-xs text-bis-blue">
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts;
+}
+
+function FormattedMessage({ content }: { content: string }) {
+  if (!content) return null;
+
+  // Split by double newline or '---' to form individual visual sections
+  const rawSections = content.split(/\n\s*---\s*\n|\n\n+/);
+
+  return (
+    <div className="space-y-4 text-sm text-bis-text leading-relaxed">
+      {rawSections.map((section, idx) => {
+        const trimmed = section.trim();
+        if (!trimmed) return null;
+
+        // 1. In Simple Words (Quick Summary callout)
+        if (
+          trimmed.includes('In Simple Words') ||
+          trimmed.includes('सरल शब्दों में') ||
+          trimmed.includes('ಸರಳ ಮಾತುಗಳಲ್ಲಿ') ||
+          trimmed.includes('எளிய சொற்களில்')
+        ) {
+          const lines = trimmed.split('\n');
+          const titleLine = lines[0].replace(/^[#*\s💡]+/, '').replace(/[*#]/g, '').trim();
+          const bodyLines = lines.slice(1).join('\n').trim();
+
+          return (
+            <div key={idx} className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 shadow-xs">
+              <div className="flex items-center gap-2 mb-2 text-amber-900 font-bold text-sm">
+                <span className="text-base">💡</span>
+                <span>{titleLine || 'In Simple Words'}</span>
+                <span className="ml-auto text-[10px] bg-amber-200/70 text-amber-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Quick Summary
+                </span>
+              </div>
+              <div className="text-amber-950 text-sm leading-relaxed space-y-1">
+                {(bodyLines || lines.join(' ')).split('\n').map((line, lIdx) => (
+                  <p key={lIdx}>{parseInlineMarkdown(line)}</p>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // 2. Is It Compulsory by Law (Legal Status Card)
+        if (
+          trimmed.includes('Compulsory by Law') ||
+          trimmed.includes('Mandatory by Law') ||
+          trimmed.includes('Is It Compulsory') ||
+          trimmed.includes('कानूनन अनिवार्य') ||
+          trimmed.includes('ಕಾನೂನಿನ ಪ್ರಕಾರ ಕಡ್ಡಾಯ') ||
+          trimmed.includes('ಕಡ್ಡಾಯವೇ') ||
+          trimmed.includes('சட்டப்படி கட்டாயமா')
+        ) {
+          const isMandatory =
+            trimmed.toUpperCase().includes('YES') ||
+            trimmed.includes('Mandatory') ||
+            trimmed.includes('हाँ') ||
+            trimmed.includes('ಹೌದು') ||
+            trimmed.includes('ஆம்') ||
+            trimmed.includes('ಕಡ್ಡಾಯ') ||
+            trimmed.includes('கட்டாய');
+          const lines = trimmed.split('\n');
+          const titleLine = lines[0].replace(/^[#*\s⚖️]+/, '').replace(/[*#]/g, '').trim();
+          const bodyLines = lines.slice(1).join('\n').trim();
+
+          return (
+            <div
+              key={idx}
+              className={`p-4 rounded-xl border shadow-xs ${
+                isMandatory ? 'bg-red-50/70 border-red-200' : 'bg-emerald-50/70 border-emerald-200'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2 font-bold text-sm">
+                <span className="text-base">⚖️</span>
+                <span className={isMandatory ? 'text-red-900' : 'text-emerald-900'}>
+                  {titleLine || 'Is It Compulsory by Law in India?'}
+                </span>
+                <span
+                  className={`ml-auto text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                    isMandatory ? 'bg-red-600 text-white shadow-xs' : 'bg-emerald-600 text-white'
+                  }`}
+                >
+                  {isMandatory ? 'Compulsory By Law' : 'Voluntary'}
+                </span>
+              </div>
+              <div className={`text-sm leading-relaxed space-y-1.5 ${isMandatory ? 'text-red-950' : 'text-emerald-950'}`}>
+                {bodyLines.split('\n').map((line, lIdx) => (
+                  <p key={lIdx}>{parseInlineMarkdown(line)}</p>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // 3. Quick Tip (BIS Care App Card)
+        if (
+          trimmed.includes('Quick Tip') ||
+          trimmed.includes('BIS Care App') ||
+          trimmed.includes('सत्यापन टिप') ||
+          trimmed.includes('ಪರಿಶೀಲನೆ ಸಲಹೆ') ||
+          trimmed.includes('சரிபார்ப்பு குறிப்பு')
+        ) {
+          const lines = trimmed.split('\n');
+          const titleLine = lines[0].replace(/^[#*\s📲]+/, '').replace(/[*#]/g, '').trim();
+          const bodyLines = lines.slice(1).join('\n').trim();
+
+          return (
+            <div key={idx} className="p-4 rounded-xl bg-blue-50/90 border border-blue-200 shadow-xs">
+              <div className="flex items-center gap-2 mb-2 text-blue-900 font-bold text-sm">
+                <span className="text-base">📲</span>
+                <span>{titleLine || 'Quick Tip: Verify Instantly on BIS Care App'}</span>
+                <span className="ml-auto text-[10px] bg-blue-200/80 text-blue-900 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Mobile App Tip
+                </span>
+              </div>
+              <div className="text-blue-950 text-sm leading-relaxed space-y-1">
+                {bodyLines.split('\n').map((line, lIdx) => (
+                  <p key={lIdx}>{parseInlineMarkdown(line)}</p>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // 4. Standard sections with headings, lists, bullets, and paragraphs
+        const lines = trimmed.split('\n');
+        return (
+          <div key={idx} className="space-y-2">
+            {lines.map((line, lineIdx) => {
+              const lineTrimmed = line.trim();
+              if (!lineTrimmed) return null;
+
+              // Headings with #
+              if (lineTrimmed.startsWith('###') || lineTrimmed.startsWith('##') || lineTrimmed.startsWith('#')) {
+                const headerText = lineTrimmed.replace(/^#+\s*/, '').replace(/[*_]/g, '');
+                return (
+                  <h4 key={lineIdx} className="font-bold text-bis-navy text-sm md:text-[15px] pt-3 pb-1 border-b border-bis-border/60 flex items-center gap-2">
+                    {headerText}
+                  </h4>
+                );
+              }
+
+              // Headers starting with emoji badges (e.g. 🔍 **What You Should Check**)
+              if (/^[🔍📋🏢💡⚖️📲🏷️📌]\s*\*\*/.test(lineTrimmed)) {
+                return (
+                  <h4 key={lineIdx} className="font-bold text-bis-navy text-sm md:text-[15px] pt-3 pb-1 border-b border-bis-border/60 flex items-center gap-2">
+                    {parseInlineMarkdown(lineTrimmed)}
+                  </h4>
+                );
+              }
+
+              // Bullet item: * or -
+              if (lineTrimmed.startsWith('* ') || lineTrimmed.startsWith('- ')) {
+                const bulletContent = lineTrimmed.replace(/^[*\-]\s+/, '');
+                return (
+                  <div key={lineIdx} className="flex items-start gap-2.5 pl-1 py-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-bis-blue mt-2 flex-shrink-0" />
+                    <div className="flex-1 text-sm text-bis-text leading-relaxed">
+                      {parseInlineMarkdown(bulletContent)}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Numbered item: 1. or 2.
+              if (/^\d+\.\s+/.test(lineTrimmed)) {
+                const numMatch = lineTrimmed.match(/^(\d+)\.\s+(.*)/);
+                if (numMatch) {
+                  return (
+                    <div key={lineIdx} className="flex items-start gap-2.5 pl-1 py-0.5">
+                      <span className="w-5 h-5 rounded-full bg-bis-navy text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                        {numMatch[1]}
+                      </span>
+                      <div className="flex-1 text-sm text-bis-text leading-relaxed">
+                        {parseInlineMarkdown(numMatch[2])}
+                      </div>
+                    </div>
+                  );
+                }
+              }
+
+              // Blockquote: >
+              if (lineTrimmed.startsWith('>')) {
+                return (
+                  <div key={lineIdx} className="border-l-3 border-bis-blue bg-bis-blue-light/50 p-2.5 rounded-r-lg text-xs md:text-sm text-bis-navy leading-relaxed italic my-1">
+                    {parseInlineMarkdown(lineTrimmed.replace(/^>\s*/, ''))}
+                  </div>
+                );
+              }
+
+              // Normal paragraph
+              return (
+                <p key={lineIdx} className="text-sm text-bis-text leading-relaxed">
+                  {parseInlineMarkdown(lineTrimmed)}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── Message bubble ───────────────────────────────────────── */
 function MessageBubble({
   msg, loadingStep, onOpenSource, onSaveStandard, onClarify, onNavigate
@@ -373,7 +910,7 @@ function MessageBubble({
   onOpenSource: (src: typeof DEMO_RESPONSE.sources[0]) => void;
   onSaveStandard: () => void;
   onClarify: (q: string) => void;
-  onNavigate: (path: string) => void;
+  onNavigate: (path: string, options?: any) => void;
 }) {
   if (msg.role === 'user') {
     return (
@@ -458,7 +995,9 @@ function MessageBubble({
             </div>
 
             <div className="p-5">
-              <p className="text-sm text-bis-text leading-relaxed mb-5">{msg.content}</p>
+              <div className="mb-6">
+                <FormattedMessage content={msg.content} />
+              </div>
 
               {msg.standards && msg.standards.length > 0 && (
                 <div className="mb-5">
@@ -478,7 +1017,10 @@ function MessageBubble({
                           </div>
                           <div className="flex flex-col gap-1.5 flex-shrink-0">
                             <button
-                              onClick={() => onNavigate('/standards/detail')}
+                              onClick={() => {
+                                const match = MOCK_STANDARDS.find(s => s.number === std.number || s.id === std.id);
+                                onNavigate(`/standards/detail?id=${std.id}`, { state: { standard: match || std } });
+                              }}
                               className="text-xs font-medium text-white bg-bis-navy hover:bg-bis-navy-dark px-2.5 py-1.5 rounded-lg transition-colors"
                             >
                               View
