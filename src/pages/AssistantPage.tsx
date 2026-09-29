@@ -57,6 +57,8 @@ const LOADING_STEPS_BY_LANG: Record<string, string[]> = {
   ],
 };
 
+const LOADING_STEPS = LOADING_STEPS_BY_LANG.en;
+
 const PLACEHOLDERS: Record<string, string> = {
   hi: 'भारतीय मानक, प्रमाणीकरण, परीक्षण या हॉलमार्किंग के बारे में पूछें...',
   kn: 'ಭಾರತೀಯ ಮಾನದಂಡಗಳು, ಪ್ರಮಾಣೀಕರಣ, ಪರೀಕ್ಷೆ ಅಥವಾ ಹಾಲ್‌ಮಾರ್ಕಿಂಗ್ ಬಗ್ಗೆ ಕೇಳಿ...',
