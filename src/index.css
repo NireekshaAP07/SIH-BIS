@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --color-bis-navy:        #0d2858;
+  --color-bis-navy-dark:   #081a3c;
+  --color-bis-navy-hover:  #1a3f7a;
+  --color-bis-blue:        #1a56a5;
+  --color-bis-blue-mid:    #1d6fa4;
+  --color-bis-blue-light:  #e8f0fb;
+  --color-bis-blue-pale:   #f0f5ff;
+  --color-bis-gold:        #b87a1a;
+  --color-bis-gold-bright: #d4941f;
+  --color-bis-gold-light:  #fdf3e3;
+  --color-bis-surface:     #f3f6fb;
+  --color-bis-surface-2:   #ebeef5;
+  --color-bis-border:      #d0daea;
+  --color-bis-border-dark: #b0bfd4;
+  --color-bis-text:        #0f1e3d;
+  --color-bis-muted:       #5a6a85;
+  --color-bis-muted-light: #8a9ab5;
+  --color-bis-success:     #15803d;
+  --color-bis-success-bg:  #dcfce7;
+  --color-bis-warning:     #92400e;
+  --color-bis-warning-bg:  #fef3c7;
+  --color-bis-error:       #b91c1c;
+  --color-bis-error-bg:    #fee2e2;
+}
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body { margin: 0; padding: 0; background: #fff; color: #0f1e3d; }
+
+a { color: inherit; text-decoration: none; }
+
+/* Focus ring — visible on keyboard nav, hidden on mouse */
+:focus-visible {
+  outline: 2px solid #1a56a5;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d0daea; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a0b0c8; }
+* { scrollbar-width: thin; scrollbar-color: #d0daea transparent; }
+
+/* Typing animation for assistant */
+@keyframes bis-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Bounce for loading dots */
+@keyframes bis-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.bis-dot-1 { animation: bis-bounce 1.1s ease-in-out infinite 0s; }
+.bis-dot-2 { animation: bis-bounce 1.1s ease-in-out infinite 0.18s; }
+.bis-dot-3 { animation: bis-bounce 1.1s ease-in-out infinite 0.36s; }
+
+/* Print styles for compliance report */
+@media print {
+  header, footer, nav, .print-hide { display: none !important; }
+  body { font-size: 12px; }
+  .print-page { page-break-after: always; }
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Access an AI-powered assistant for Indian Standards and BIS services, enabling users to easily find information on certification, testing, and compliance.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
