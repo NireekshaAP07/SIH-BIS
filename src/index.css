@@ -34,11 +34,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
-
-body { margin: 0; padding: 0; background: #fff; color: #0f1e3d; }
-
-a { color: inherit; text-decoration: none; }
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: #fff; color: #0f1e3d; }
+  a { color: inherit; text-decoration: none; }
+}
 
 /* Focus ring — visible on keyboard nav, hidden on mouse */
 :focus-visible {

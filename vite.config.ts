@@ -37,7 +37,9 @@ react(),
       watch: {
         ignored: [
           '**/.figma/**',
-],
+          '**/backend/**',
+          '**/.venv/**',
+        ],
       },
     },
     preview: {

@@ -131,12 +131,13 @@ export default function StandardsPage() {
             {filtered.length > 0 ? (
               <div className="space-y-3">
                 {filtered.map(std => (
-                  <Card key={std.id} hoverable onClick={() => navigate('/standards/detail')} className="p-5">
+                  <Card key={std.id} hoverable onClick={() => navigate(`/standards/detail?id=${std.id}`, { state: { standard: std } })} className="p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <span className="text-xs font-mono font-semibold text-bis-blue">{std.number}</span>
                           <Badge label={std.status} variant="green" />
+                          {std.mandatory && <Badge label="Mandatory (QCO)" variant="red" />}
                           {std.certRequired && <Badge label="Certification applicable" variant="gold" />}
                           {std.testingRequired && <Badge label="Testing required" variant="blue" />}
                         </div>
@@ -147,7 +148,7 @@ export default function StandardsPage() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1 flex-shrink-0">
-                        <Button variant="primary" size="sm" onClick={e => { e.stopPropagation(); navigate('/standards/detail'); }}>
+                        <Button variant="primary" size="sm" onClick={e => { e.stopPropagation(); navigate(`/standards/detail?id=${std.id}`, { state: { standard: std } }); }}>
                           View Standard
                         </Button>
                         <Button variant="ghost" size="sm" onClick={e => e.stopPropagation()}>

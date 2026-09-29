@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { LanguageProvider } from './i18n/LanguageContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import MobileNav from './components/layout/MobileNav';
@@ -17,6 +18,8 @@ import HistoryPage from './pages/HistoryPage';
 import SavedPage from './pages/SavedPage';
 import SettingsPage from './pages/SettingsPage';
 import SearchPage from './pages/SearchPage';
+import HelpPage from './pages/HelpPage';
+import ContactPage from './pages/ContactPage';
 
 function AppLayout() {
   const location = useLocation();
@@ -42,6 +45,8 @@ function AppLayout() {
           <Route path="/saved" element={<SavedPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
@@ -57,17 +62,19 @@ function NotFound() {
       <div className="text-6xl font-bold text-bis-border mb-4">404</div>
       <h1 className="text-2xl font-bold text-bis-text mb-2">Page not found</h1>
       <p className="text-bis-muted mb-6">The page you're looking for doesn't exist.</p>
-      <a href="/" className="px-5 py-2.5 bg-bis-navy text-white rounded-lg text-sm font-medium hover:bg-bis-navy-dark transition-colors">
+      <Link to="/" className="px-5 py-2.5 bg-bis-navy text-white rounded-lg text-sm font-medium hover:bg-bis-navy-dark transition-colors">
         Return to Home
-      </a>
+      </Link>
     </div>
   );
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppLayout />
-    </BrowserRouter>
+    <HashRouter>
+      <LanguageProvider>
+        <AppLayout />
+      </LanguageProvider>
+    </HashRouter>
   );
 }
