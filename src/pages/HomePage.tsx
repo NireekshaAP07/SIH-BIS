@@ -224,14 +224,14 @@ export default function HomePage() {
           </div>
           <div className="relative">
             {/* connector */}
-            <div className="hidden md:block absolute top-9 left-[calc(12.5%+2rem)] right-[calc(12.5%+2rem)] h-px bg-bis-border"/>
+            <div className="hidden md:block absolute top-6 left-[calc(12.5%+1.5rem)] right-[calc(12.5%+1.5rem)] h-px bg-bis-border"/>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
               {howSteps.map((step, i) => (
                 <div key={step.num} className="flex flex-col items-center text-center px-4 py-2 relative">
-                  <div className="w-16 h-16 rounded-full bg-bis-navy text-white flex flex-col items-center justify-center mb-4 relative z-10 shadow-md shadow-bis-navy/20">
-                    <span className="text-[10px] text-white/50 font-mono leading-none tracking-wider">{step.num}</span>
-                    <span className="text-base font-bold leading-none mt-0.5">{step.title}</span>
+                  <div className="w-12 h-12 rounded-full bg-bis-navy text-white font-mono font-bold text-sm flex items-center justify-center mb-3 relative z-10 shadow-md shadow-bis-navy/20">
+                    {step.num}
                   </div>
+                  <h3 className="text-base font-bold text-bis-text mb-1.5">{step.title}</h3>
                   <p className="text-sm text-bis-muted leading-relaxed max-w-[180px]">{step.desc}</p>
                   {i < howSteps.length - 1 && (
                     <div className="md:hidden mt-5 mb-1 text-bis-border">
