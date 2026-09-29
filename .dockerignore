@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.git/
+.github/
+.gemini/
+backend/venv/
+backend/.venv/
+backend/chroma_db/
+backend/.env
+backend/.env.*
+*.log
+logs/
+.DS_Store
+Thumbs.db
