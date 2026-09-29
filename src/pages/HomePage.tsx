@@ -140,58 +140,6 @@ export default function HomePage() {
               {t.home.heroPara}
             </p>
 
-            {/* AI Search box */}
-            <div className="bg-white rounded-xl shadow-2xl shadow-black/30 mb-5 overflow-hidden max-w-2xl">
-              <div className="flex items-center px-4 py-1 gap-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-bis-blue-light flex-shrink-0">
-                  <svg className="w-4 h-4 text-bis-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
-                </div>
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                  placeholder={t.home.inputPlaceholder}
-                  className="flex-1 py-4 text-bis-text text-sm placeholder:text-bis-muted/70 outline-none bg-transparent"
-                  aria-label="Ask the BIS Assistant"
-                />
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    className="p-2 text-bis-muted hover:text-bis-blue rounded-lg transition-colors"
-                    aria-label="Voice input"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                  </button>
-                  <button
-                    className="p-2 text-bis-muted hover:text-bis-blue rounded-lg transition-colors"
-                    aria-label="Attach document"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/></svg>
-                  </button>
-                  <div className="w-px h-6 bg-bis-border mx-1"/>
-                  <button
-                    onClick={() => handleSubmit()}
-                    className="flex items-center gap-1.5 bg-bis-navy hover:bg-bis-navy-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    {t.home.askBtnLabel}
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                  </button>
-                </div>
-              </div>
-              <div className="px-4 pb-3 flex flex-wrap gap-2 border-t border-bis-border/50 pt-2.5">
-                <span className="text-xs text-bis-muted py-0.5">{t.home.tryLabel}</span>
-                {t.home.trySuggestions.map(q => (
-                  <button
-                    key={q}
-                    onClick={() => handleSubmit(q)}
-                    className="text-xs text-bis-blue bg-bis-blue-light hover:bg-bis-blue hover:text-white px-2.5 py-1 rounded border border-bis-blue/20 transition-all"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => navigate('/assistant')}
