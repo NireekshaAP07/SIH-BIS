@@ -58,12 +58,12 @@ export function Button({
 interface BadgeProps { label: string; variant?: 'blue' | 'gold' | 'green' | 'gray' | 'red' | 'navy'; }
 export function Badge({ label, variant = 'blue' }: BadgeProps) {
   const variants = {
-    blue: 'bg-bis-blue-light text-bis-blue border-bis-blue/20',
-    gold: 'bg-bis-gold-light text-bis-gold border-bis-gold/20',
-    green: 'bg-bis-success-bg text-bis-success border-green-200',
-    gray: 'bg-bis-surface text-bis-muted border-bis-border',
-    red: 'bg-bis-error-bg text-bis-error border-red-200',
-    navy: 'bg-bis-navy text-white border-transparent',
+    blue: 'bg-bis-blue-light text-bis-text border-bis-blue/20',
+    gold: 'bg-bis-blue-light text-bis-text border-bis-blue/20',
+    green: 'bg-bis-blue-light text-bis-text border-bis-blue/20',
+    gray: 'bg-bis-blue-light text-bis-text border-bis-blue/20',
+    red: 'bg-bis-blue-light text-bis-text border-bis-blue/20',
+    navy: 'bg-bis-blue-light text-bis-text border-bis-blue/20',
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded border ${variants[variant]}`}>
