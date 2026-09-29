@@ -83,18 +83,7 @@ export default function ResourcesPage() {
           </div>
         </div>
 
-        <div className="p-6 bg-bis-navy rounded-xl text-white">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h3 className="text-lg font-bold mb-2">Can't find what you need?</h3>
-              <p className="text-white/70 text-sm">Ask the BIS Assistant for help locating specific documents or information.</p>
-            </div>
-            <Button onClick={() => navigate('/assistant')} size="lg" className="bg-bis-gold hover:bg-amber-700 text-white border-0">
-              Ask BIS Assistant
-            </Button>
-          </div>
         </div>
-      </div>
     </div>
   );
 }

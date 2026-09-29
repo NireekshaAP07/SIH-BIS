@@ -120,17 +120,6 @@ export default function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
-            {/* Gov badge */}
-            <div className="flex items-center gap-2 mb-8 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded px-2.5 py-1">
-                <div className="w-2 h-2 rounded-full bg-bis-gold"/>
-                <span className="text-white/80 text-xs font-medium tracking-wide">{t.home.govBadge}</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-white/10 border border-white/20 rounded px-2.5 py-1">
-                <span className="text-white/80 text-xs font-medium">{t.home.aiBadge}</span>
-              </div>
-            </div>
-
             <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight mb-4">
               {t.home.hero1}
               <br/>
