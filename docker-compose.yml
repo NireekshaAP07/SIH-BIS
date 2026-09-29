@@ -18,7 +18,7 @@ services:
     volumes:
       - ./backend/data:/app/data:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/status"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/api/status" ]
       interval: 30s
       timeout: 5s
       retries: 3
