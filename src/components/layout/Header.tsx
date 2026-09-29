@@ -157,6 +157,11 @@ export default function Header() {
             </div>
 
             <div className="w-px h-4 bg-white/15 mx-0.5"/>
+            <a href="https://play.google.com/store/apps/details?id=com.bis.bisapp" target="_blank" rel="noopener noreferrer" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors gap-1">
+              <span>BIS CARE App</span>
+              <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <div className="w-px h-4 bg-white/15 mx-0.5"/>
             <a href="/resources" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors">Help</a>
             <div className="w-px h-4 bg-white/15 mx-0.5"/>
             <a href="/consumer" className="px-2.5 h-8 flex items-center text-white/70 hover:text-white transition-colors hidden sm:flex">Contact</a>
@@ -246,11 +251,7 @@ export default function Header() {
             {/* BIS Assistant CTA */}
             <Link
               to="/assistant"
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                location.pathname === '/assistant'
-                  ? 'bg-bis-gold text-white shadow-sm shadow-amber-900/20'
-                  : 'bg-white/10 text-white hover:bg-white/20 border border-white/25 hover:border-white/40'
-              }`}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-bis-gold text-white hover:bg-bis-gold-bright shadow-sm transition-all"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
               Ask BIS Assistant
