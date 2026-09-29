@@ -18,7 +18,7 @@ COLLECTION_NAME = "bis_knowledge"
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 # Singleton client — initialised once on import
-_client: chromadb.PersistentClient | None = None
+_client: chromadb.ClientAPI | None = None
 _collection = None
 _emb_fn = None
 
