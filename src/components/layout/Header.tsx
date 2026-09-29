@@ -169,13 +169,7 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group flex-shrink-0" aria-label="Bureau of Indian Standards — Home">
-            <div className="w-9 h-9 bg-white rounded flex items-center justify-center shadow-sm flex-shrink-0">
-              <div className="flex flex-col items-center gap-[2px]">
-                <div className="w-7 h-[3px] bg-bis-navy rounded-[1px]"/>
-                <div className="text-bis-navy font-black text-[11px] leading-none tracking-tight">BIS</div>
-                <div className="w-7 h-[2px] bg-bis-gold rounded-[1px]"/>
-              </div>
-            </div>
+            <img src="/bis-logo.webp" alt="BIS Logo" className="w-10 h-10 object-contain flex-shrink-0" />
             <div className="hidden sm:block">
               <div className="font-bold text-[13px] text-white leading-tight group-hover:text-white/90 transition-colors">
                 Bureau of Indian Standards
